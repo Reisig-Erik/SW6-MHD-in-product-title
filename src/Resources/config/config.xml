@@ -6,7 +6,7 @@
         <title>MHD Manager Settings</title>
         <title lang="de-DE">MHD Manager Einstellungen</title>
 
-        <input-field type="multi-entity-id-select">
+        <input-field type="multi-select">
             <name>enabledSalesChannels</name>
             <label>Enable for Sales Channels</label>
             <label lang="de-DE">Für Verkaufskanäle aktivieren</label>
@@ -14,7 +14,13 @@
             <placeholder lang="de-DE">Verkaufskanäle auswählen...</placeholder>
             <helpText>Select the sales channels where MHD management should be active. Leave empty to enable for all channels.</helpText>
             <helpText lang="de-DE">Wählen Sie die Verkaufskanäle aus, für die die MHD-Verwaltung aktiv sein soll. Leer lassen, um für alle Kanäle zu aktivieren.</helpText>
-            <entity>sales_channel</entity>
+            <options>
+                <option>
+                    <id>all</id>
+                    <name>All Sales Channels</name>
+                    <name lang="de-DE">Alle Verkaufskanäle</name>
+                </option>
+            </options>
         </input-field>
     </card>
 </config>
