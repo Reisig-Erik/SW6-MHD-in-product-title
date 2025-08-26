@@ -87,8 +87,5 @@ LebensmittelMhdManager/
 - Processing is lightweight and async where possible
 - For bulk updates, consider using batch operations
 
-## Support
-Contact: dev@lebensmittel-sonderposten.de
-
 ## License
 Proprietary
