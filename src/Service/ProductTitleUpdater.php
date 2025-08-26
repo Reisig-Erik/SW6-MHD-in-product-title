@@ -5,10 +5,15 @@ namespace LebensmittelMhdManager\Service;
 class ProductTitleUpdater
 {
     /**
-     * Pattern to match MHD date in product title
-     * Matches: " MHD DD.MM.YY" or " MHD DD.MM.YYYY" at the end of string
+     * Pattern to match MHD and everything after it
+     * Matches: MHD (with optional colon) followed by anything until end of string
+     * Case-insensitive, handles variations like:
+     * - MHD 31.12.24
+     * - MHD: 12/24
+     * - MHD12.2024
+     * - mhd 31-12-2024
      */
-    private const MHD_PATTERN = '/\sMHD\s\d{2}\.\d{2}\.\d{2,4}\s*$/';
+    private const MHD_PATTERN = '/\s*MHD:?\s*.+$/i';
     
     /**
      * Update product title with MHD date
@@ -101,16 +106,13 @@ class ProductTitleUpdater
      * Extract MHD date from title if present
      * 
      * @param string $title
-     * @return string|null The date string (DD.MM.YY) or null if not found
+     * @return string|null The full MHD string or null if not found
      */
     public function extractMhdFromTitle(string $title): ?string
     {
         if (preg_match(self::MHD_PATTERN, $title, $matches)) {
-            // Extract just the date part (remove " MHD " prefix)
-            $mhdPart = trim($matches[0]);
-            $parts = explode(' ', $mhdPart);
-            
-            return end($parts);
+            // Return the full matched MHD string
+            return trim($matches[0]);
         }
         
         return null;
