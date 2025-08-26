@@ -1,0 +1,25 @@
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Dependencies
+vendor/
+node_modules/
+
+# Build
+/build/
+/dist/
+
+# Tests
+/coverage/
+.phpunit.result.cache
+
+# Logs
+*.log
+
+# Cache
+/var/

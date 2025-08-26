@@ -1,0 +1,40 @@
+{
+    "name": "lebensmittel/mhd-manager",
+    "description": "MHD Manager Plugin - Automatically manages MHD dates in product titles and custom fields",
+    "type": "shopware-platform-plugin",
+    "license": "proprietary",
+    "version": "1.0.0",
+    "authors": [
+        {
+            "name": "Lebensmittel Sonderposten",
+            "email": "dev@lebensmittel-sonderposten.de"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "LebensmittelMhdManager\\": "src/"
+        }
+    },
+    "require": {
+        "shopware/core": "~6.6.0"
+    },
+    "extra": {
+        "shopware-plugin-class": "LebensmittelMhdManager\\LebensmittelMhdManager",
+        "label": {
+            "de-DE": "MHD Manager",
+            "en-GB": "MHD Manager"
+        },
+        "description": {
+            "de-DE": "Verwaltet automatisch MHD-Daten in Produkttiteln und Custom Fields",
+            "en-GB": "Automatically manages best-before dates in product titles and custom fields"
+        },
+        "manufacturerLink": {
+            "de-DE": "https://lebensmittel-sonderposten.de",
+            "en-GB": "https://lebensmittel-sonderposten.de"
+        },
+        "supportLink": {
+            "de-DE": "https://lebensmittel-sonderposten.de/kontakt",
+            "en-GB": "https://lebensmittel-sonderposten.de/kontakt"
+        }
+    }
+}
