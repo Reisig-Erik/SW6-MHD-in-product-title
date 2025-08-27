@@ -98,4 +98,16 @@ class MhdDateParser
     {
         return $date->format('dmy');
     }
+    
+    /**
+     * Format date for description display with full year (DD.MM.YYYY)
+     * Used for invisible-date spans in product descriptions
+     * 
+     * @param \DateTimeInterface $date
+     * @return string
+     */
+    public function formatForDescription(\DateTimeInterface $date): string
+    {
+        return $date->format('d.m.Y');
+    }
 }
