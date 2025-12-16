@@ -7,7 +7,11 @@
     <services>
         <!-- Services -->
         <service id="LebensmittelMhdManager\Service\MhdDateParser" />
-        
+
+        <service id="LebensmittelMhdManager\Service\MhdCustomFieldSynchronizer">
+            <argument type="service" id="LebensmittelMhdManager\Service\MhdDateParser"/>
+        </service>
+
         <service id="LebensmittelMhdManager\Service\ProductTitleUpdater" />
         
         <service id="LebensmittelMhdManager\Service\ProductDescriptionUpdater" />
@@ -22,11 +26,31 @@
         <service id="LebensmittelMhdManager\Subscriber\ProductSubscriber">
             <argument type="service" id="product.repository"/>
             <argument type="service" id="LebensmittelMhdManager\Service\MhdDateParser"/>
+            <argument type="service" id="LebensmittelMhdManager\Service\MhdCustomFieldSynchronizer"/>
             <argument type="service" id="LebensmittelMhdManager\Service\ProductTitleUpdater"/>
             <argument type="service" id="LebensmittelMhdManager\Service\ProductDescriptionUpdater"/>
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
             <argument type="service" id="logger"/>
             <tag name="kernel.event_subscriber"/>
+        </service>
+        
+        <service id="LebensmittelMhdManager\Subscriber\StockMovementSubscriber">
+            <argument type="service" id="product.repository"/>
+            <argument type="service" id="LebensmittelMhdManager\Service\MhdDateParser"/>
+            <argument type="service" id="logger"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <!-- Rules for Dynamic Product Groups / Rule Builder -->
+        <service id="LebensmittelMhdManager\Core\Rule\LineItemMhdDateRule">
+            <tag name="shopware.rule.definition"/>
+        </service>
+
+        <!-- Console Commands -->
+        <service id="LebensmittelMhdManager\Command\SyncMhdDatesCommand">
+            <argument type="service" id="product.repository"/>
+            <argument type="service" id="LebensmittelMhdManager\Service\MhdCustomFieldSynchronizer"/>
+            <tag name="console.command"/>
         </service>
     </services>
 </container>

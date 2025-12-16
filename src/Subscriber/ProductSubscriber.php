@@ -3,6 +3,7 @@
 namespace LebensmittelMhdManager\Subscriber;
 
 use LebensmittelMhdManager\Service\MhdDateParser;
+use LebensmittelMhdManager\Service\MhdCustomFieldSynchronizer;
 use LebensmittelMhdManager\Service\ProductTitleUpdater;
 use LebensmittelMhdManager\Service\ProductDescriptionUpdater;
 use Shopware\Core\Content\Product\ProductEvents;
@@ -13,11 +14,13 @@ use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Psr\Log\LoggerInterface;
+use Shopware\Core\Framework\Api\Context\SalesChannelApiSource;
 
 class ProductSubscriber implements EventSubscriberInterface
 {
     private EntityRepository $productRepository;
     private MhdDateParser $dateParser;
+    private MhdCustomFieldSynchronizer $mhdSynchronizer;
     private ProductTitleUpdater $titleUpdater;
     private ProductDescriptionUpdater $descriptionUpdater;
     private SystemConfigService $systemConfigService;
@@ -26,6 +29,7 @@ class ProductSubscriber implements EventSubscriberInterface
     public function __construct(
         EntityRepository $productRepository,
         MhdDateParser $dateParser,
+        MhdCustomFieldSynchronizer $mhdSynchronizer,
         ProductTitleUpdater $titleUpdater,
         ProductDescriptionUpdater $descriptionUpdater,
         SystemConfigService $systemConfigService,
@@ -33,6 +37,7 @@ class ProductSubscriber implements EventSubscriberInterface
     ) {
         $this->productRepository = $productRepository;
         $this->dateParser = $dateParser;
+        $this->mhdSynchronizer = $mhdSynchronizer;
         $this->titleUpdater = $titleUpdater;
         $this->descriptionUpdater = $descriptionUpdater;
         $this->systemConfigService = $systemConfigService;
@@ -53,7 +58,12 @@ class ProductSubscriber implements EventSubscriberInterface
     public function onProductTranslationWritten(EntityWrittenEvent $event): void
     {
         $context = $event->getContext();
-        
+
+        // Prevent recursion - skip if this update was triggered by the plugin itself
+        if ($context->hasState('mhd_manager_processing')) {
+            return;
+        }
+
         // Check if plugin is enabled for this sales channel
         if (!$this->isEnabledForContext($context)) {
             return;
@@ -103,7 +113,12 @@ class ProductSubscriber implements EventSubscriberInterface
     public function onProductWritten(EntityWrittenEvent $event): void
     {
         $context = $event->getContext();
-        
+
+        // Prevent recursion - skip if this update was triggered by the plugin itself
+        if ($context->hasState('mhd_manager_processing')) {
+            return;
+        }
+
         // Check if plugin is enabled for this sales channel
         if (!$this->isEnabledForContext($context)) {
             return;
@@ -234,7 +249,7 @@ class ProductSubscriber implements EventSubscriberInterface
                     $hasChanges = true;
                 }
                 
-                // Update custom field for expiry date
+                // Update custom field for expiry date (display format)
                 if ($mhdDateFormatted) {
                     // Set expiry date
                     $customFields['custom_product_detail_expiry_date'] = $mhdDateFormatted;
@@ -243,6 +258,25 @@ class ProductSubscriber implements EventSubscriberInterface
                     // Clear expiry date
                     if (isset($customFields['custom_product_detail_expiry_date'])) {
                         unset($customFields['custom_product_detail_expiry_date']);
+                        $hasChanges = true;
+                    }
+                }
+
+                // Update custom field for MHD date (datetime format for Product Streams)
+                $mhdDateValue = $this->mhdSynchronizer->convertToCustomFieldValue($manufacturerNumber);
+                $mhdDaysValue = $this->mhdSynchronizer->calculateDaysUntilMhd($manufacturerNumber);
+                if ($mhdDateValue !== null) {
+                    $customFields['custom_product_mhd_date'] = $mhdDateValue;
+                    $customFields['custom_product_mhd_days'] = $mhdDaysValue;
+                    $hasChanges = true;
+                } else {
+                    // Clear MHD date and days
+                    if (isset($customFields['custom_product_mhd_date'])) {
+                        unset($customFields['custom_product_mhd_date']);
+                        $hasChanges = true;
+                    }
+                    if (isset($customFields['custom_product_mhd_days'])) {
+                        unset($customFields['custom_product_mhd_days']);
                         $hasChanges = true;
                     }
                 }
@@ -274,15 +308,23 @@ class ProductSubscriber implements EventSubscriberInterface
 
         // Only update if there are changes
         if (!empty($updateData['translations'])) {
-            $this->productRepository->update([$updateData], $context);
-            
-            $this->logger->info('MHD Manager: Updated product', [
-                'productId' => $productId,
-                'manufacturerNumber' => $manufacturerNumber,
-                'mhdDate' => $mhdDateFormatted,
-                'processMhd' => $processMhd,
-                'processEan' => $processEan
-            ]);
+            // Set context flag to prevent recursion
+            $context->addState('mhd_manager_processing');
+
+            try {
+                $this->productRepository->update([$updateData], $context);
+
+                $this->logger->info('MHD Manager: Updated product', [
+                    'productId' => $productId,
+                    'manufacturerNumber' => $manufacturerNumber,
+                    'mhdDate' => $mhdDateFormatted,
+                    'processMhd' => $processMhd,
+                    'processEan' => $processEan
+                ]);
+            } finally {
+                // Remove context flag after update
+                $context->removeState('mhd_manager_processing');
+            }
         }
     }
 
@@ -299,13 +341,17 @@ class ProductSubscriber implements EventSubscriberInterface
             return true;
         }
         
-        // Check if current context's sales channel is enabled
-        $salesChannelId = $context->getSource()->getSalesChannelId();
+        // Check the context source type
+        $source = $context->getSource();
         
-        if (!$salesChannelId) {
-            // Admin context without specific sales channel - always enabled
+        // Only SalesChannelApiSource and its subclasses have getSalesChannelId()
+        if (!($source instanceof \Shopware\Core\Framework\Api\Context\SalesChannelApiSource)) {
+            // Admin context or system context - always enabled
             return true;
         }
+        
+        // Check if current context's sales channel is enabled
+        $salesChannelId = $source->getSalesChannelId();
         
         return in_array($salesChannelId, $enabledChannels, true);
     }

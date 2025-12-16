@@ -34,8 +34,8 @@ class ProductDescriptionUpdater
             // Replace existing span
             return preg_replace($pattern, $newSpan, $description);
         } else {
-            // Add span at the end of description
-            return $description . "\n" . $newSpan;
+            // Add span at the end of description with double newline for proper spacing
+            return trim($description) . "\n\n" . $newSpan;
         }
     }
     
@@ -70,8 +70,8 @@ class ProductDescriptionUpdater
             // Replace existing span
             return preg_replace($pattern, $newSpan, $description);
         } else {
-            // Add span at the end of description
-            return $description . "\n" . $newSpan;
+            // Add span at the end of description with double newline for proper spacing
+            return trim($description) . "\n\n" . $newSpan;
         }
     }
     
